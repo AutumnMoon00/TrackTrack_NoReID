@@ -110,7 +110,8 @@ class Track(BaseTrack):
         self.velocity = np.zeros((4, 2))
         for d_t in range(1, self.delta_t + 1):
             prev_box = get_prev_box(self.history, frame_id, d_t).copy()
-            self.velocity += get_vel(prev_box, detection.x1y1x2y2)
+            self.velocity += get_vel(prev_box, detection.x1y1x2y2) / d_t
+        self.velocity /= self.delta_t
 
         # Update parameters
         self.box = detection.box.copy()
@@ -165,3 +166,4 @@ class Track(BaseTrack):
             y2 = self.mean[1] + self.mean[3] / 2
 
         return np.array([x1, y1, x2, y2])
+
