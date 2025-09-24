@@ -13,9 +13,9 @@ def get_vel(b_1, b_2):
 
     # Get velocities
     vel_lt = np.array([b_2[0] - b_1[0], b_2[1] - b_1[1]]) / norm_lt
-    vel_lb = np.array([b_2[0] - b_1[0], b_2[3] - b_1[1]]) / norm_lb
+    vel_lb = np.array([b_2[0] - b_1[0], b_2[3] - b_1[3]]) / norm_lb
     vel_rt = np.array([b_2[2] - b_1[2], b_2[1] - b_1[1]]) / norm_rt
-    vel_rb = np.array([b_2[2] - b_1[2], b_2[3] - b_1[1]]) / norm_rb
+    vel_rb = np.array([b_2[2] - b_1[2], b_2[3] - b_1[3]]) / norm_rb
 
     return np.stack([vel_lt, vel_lb, vel_rt, vel_rb], axis=0)
 
@@ -166,4 +166,5 @@ class Track(BaseTrack):
             y2 = self.mean[1] + self.mean[3] / 2
 
         return np.array([x1, y1, x2, y2])
+
 
