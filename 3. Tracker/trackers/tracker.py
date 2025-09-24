@@ -131,5 +131,6 @@ class Tracker(object):
         # Filter out the removed tracks
         self.tracks = [t for t in self.tracks if t.state != TrackState.Removed]
 
-        return [t for t in self.tracks if t.state == TrackState.Tracked]
+        return []
+
 
