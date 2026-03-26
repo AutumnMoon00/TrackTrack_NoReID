@@ -1,6 +1,9 @@
 import random
-import trackeval
 import numpy as np
+try:
+    import trackeval
+except ImportError:
+    trackeval = None
 
 # Randomly select bbox color for each object id
 color = [(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)) for i in range(5000)]
@@ -47,7 +50,7 @@ def set_parameters(args, vid_name, mode):
             args.det_thr, args.init_thr = 0.40, 0.40
         args.match_thr = 0.55
 
-    else:
+    elif 'Dance' in vid_name:
         if mode == 'val':
             args.pickle_path = args.pickle_dir + 'dance_val_0.80.pickle'
             args.pickle_path_95 = args.pickle_dir + 'dance_val_0.95.pickle'
@@ -61,6 +64,8 @@ def set_parameters(args, vid_name, mode):
         args.det_thr = 0.60
         args.init_thr = 0.60
         args.match_thr = 0.80 if mode == 'val' else 0.60
+
+    # else: custom footage — keep args as set by CLI
 
 
 def write_results(filename, results):

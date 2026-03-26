@@ -14,8 +14,8 @@ class Tracker(object):
         self.frame_id = 0
         self.counter = TrackCounter()
 
-        # Set global motion compensation model
-        self.cmc = CMC(vid_name)
+        # CMC disabled (fixed cameras — no global motion)
+        self.cmc = None
 
     def init_tracks(self, dets):
         # Get alive tracks, iou_similarity, and scores
@@ -50,10 +50,8 @@ class Tracker(object):
         tracked_lost = [t for t in self.tracks if t.state == TrackState.Tracked or t.state == TrackState.Lost]
         new = [t for t in self.tracks if t.state == TrackState.New]
 
-        # Camera motion compensation
-        warp_matrix = self.cmc.get_warp_matrix()
-        apply_cmc(tracked_lost, warp_matrix)
-        apply_cmc(new, warp_matrix)
+        # Camera motion compensation disabled (fixed cameras)
+        pass
 
         # Predict the current location with KF
         [t.predict() for t in tracked_lost]
@@ -112,9 +110,7 @@ class Tracker(object):
         # Only maintain already tracked and new tracks, Drop all the new tracks
         self.tracks = [t for t in self.tracks if t.state != TrackState.New]
 
-        # Camera motion compensation
-        warp_matrix = self.cmc.get_warp_matrix()
-        apply_cmc(self.tracks, warp_matrix)
+        # Camera motion compensation disabled (fixed cameras)
 
         # Predict the current location with KF
         [t.predict() for t in self.tracks]

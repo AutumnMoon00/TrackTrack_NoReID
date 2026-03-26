@@ -53,6 +53,7 @@ class Track(BaseTrack):
         self.args = args
         self.box = detection[:4]  # x1y1x2y2
         self.score = detection[4]
+        self.cls = int(detection[5]) if len(detection) > 5 else -1
 
         # Initialize 2
         self.delta_t = 3
@@ -61,9 +62,8 @@ class Track(BaseTrack):
         self.mean, self.covariance = None, None
         self.velocity = np.zeros((4, 2))
 
-        # Initialize 3
-        self.alpha = 0.95
-        self.feat = detection[6:][np.newaxis, :].copy()
+        # Initialize 3 (no ReID)
+        self.feat = None
 
     def update_features(self, feat, score):
         # Update and normalize
@@ -81,30 +81,24 @@ class Track(BaseTrack):
 
         # Initiate history
         self.history[frame_id] = [self.box.copy(), self.score.copy(), self.mean.copy(),
-                                  self.covariance.copy(), self.feat.copy()]
+                                  self.covariance.copy(), None]
 
         # Initiate parameters
         self.end_frame_id = frame_id
         self.state = TrackState.New
 
     def predict(self):
-        # Zero out the velocity of w and h when track is lost or new.
-        if self.state != TrackState.Tracked and 'Dance' in self.args.data_path:
-            self.mean[6] = 0
-            self.mean[7] = 0
-
         # Predict
         self.mean, self.covariance = self.kalman_filter.predict(self.mean, self.covariance)
 
     def update(self, frame_id, detection):
-        # Update Kalman filter & Feature
+        # Update Kalman filter
         self.mean, self.covariance = self.kalman_filter.update(self.mean, self.covariance,
                                                                detection.cxcywh.copy(), detection.score)
-        self.update_features(detection.feat.copy(), detection.score)
 
         # Update history
         self.history[frame_id] = [detection.box.copy(), detection.score, self.mean.copy(),
-                                  self.covariance.copy(), self.feat.copy()]
+                                  self.covariance.copy(), None]
 
         # Update velocity
         self.velocity = np.zeros((4, 2))
@@ -116,6 +110,7 @@ class Track(BaseTrack):
         # Update parameters
         self.box = detection.box.copy()
         self.score = detection.score
+        self.cls = detection.cls
         self.end_frame_id = frame_id
         self.state = TrackState.Tracked if len(self.history.keys()) >= self.args.min_len else TrackState.New
 

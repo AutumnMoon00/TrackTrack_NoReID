@@ -1,3 +1,4 @@
+import cv2
 import os
 import torch
 import pickle
@@ -20,10 +21,20 @@ def make_parser():
     parser.add_argument("--dataset", type=str, default="MOT17")
     parser.add_argument("--mode", type=str, default="val")
     parser.add_argument("--seed", type=float, default=10000)
+    parser.add_argument("--video_path", type=str, default=None,
+                        help="Path to video file; used to read FPS and set max_time_lost = fps * 10")
+
+    # Matching thresholds (tune per run)
+    parser.add_argument("--det_thr", type=float, default=0.50,
+                        help="Confidence threshold separating high/low detections")
+    parser.add_argument("--init_thr", type=float, default=0.60,
+                        help="Minimum confidence to spawn a new track")
+    parser.add_argument("--match_thr", type=float, default=0.80,
+                        help="Cost threshold for iterative assignment")
 
     # For trackers
     parser.add_argument("--min_len", type=int, default=3)
-    parser.add_argument("--min_box_area", type=float, default=100)
+    parser.add_argument("--min_box_area", type=float, default=200)
     parser.add_argument("--max_time_lost", type=float, default=30)
     parser.add_argument("--penalty_p", type=float, default=0.20)
     parser.add_argument("--penalty_q", type=float, default=0.40)
@@ -34,21 +45,22 @@ def make_parser():
 
 
 def track(detections, detections_95, data_path, result_folder, mode):
+    # Set max_time_lost from video FPS if video_path is provided
+    if args.video_path is not None:
+        cap = cv2.VideoCapture(args.video_path)
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        cap.release()
+        if fps > 0:
+            args.max_time_lost = int(fps * 10)
+            print('Video FPS: %.1f  →  max_time_lost: %d frames (10s)' % (fps, args.max_time_lost))
+        else:
+            print('Warning: could not read FPS from video, using max_time_lost=%d' % args.max_time_lost)
+
     # For each video
     total_time, total_count = 0, 0
     for vid_name in detections.keys():
         # Set proper parameters
         set_parameters(args, vid_name, mode)
-
-        # Set max time lost
-        seq_info = open(data_path + vid_name + '/seqinfo.ini', mode='r')
-        for s_i in seq_info.readlines():
-            if 'frameRate' in s_i:
-                args.max_time_lost = int(s_i.split('=')[-1]) * 2
-            if 'imWidth' in s_i:
-                args.img_w = int(s_i.split('=')[-1])
-            if 'imHeight' in s_i:
-                args.img_h = int(s_i.split('=')[-1])
 
         # Set tracker
         tracker = Tracker(args, vid_name)
@@ -68,10 +80,6 @@ def track(detections, detections_95, data_path, result_folder, mode):
             # Filter out the results
             x1y1whs, track_ids, scores = [], [], []
             for t in track_results:
-                # Check aspect ratio
-                if 'MOT' in data_path and t.x1y1wh[2] / t.x1y1wh[3] > 1.6:
-                    continue
-
                 # Check track id, minimum box area
                 if t.track_id > 0 and t.x1y1wh[2] * t.x1y1wh[3] > args.min_box_area:
                     x1y1whs.append(t.x1y1wh)

@@ -198,10 +198,9 @@ def iterative_assignment(tracks, dets_high, dets_low, dets_del_high, match_thr, 
 
     # Calculate preliminaries
     iou_sim, iou_dist = iou_distance(tracks, dets)
-    cos_dist = cos_distance(tracks, dets)
 
-    # Calculate cost
-    cost = 0.50 * iou_dist + 0.50 * cos_dist
+    # Calculate cost (no ReID)
+    cost = iou_dist
     cost += 0.10 * conf_distance(tracks, dets) + 0.05 * angle_distance(tracks, dets, frame_id, d_t)
 
     # Give penalty
